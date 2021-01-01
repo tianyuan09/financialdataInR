@@ -1,0 +1,280 @@
+---
+title: "Financial Data Analysis with R"
+author: "Yuan Tian"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: 
+      collapsed: false
+      smooth_scroll: false
+---
+
+# Introduction
+
+This document presents several fundamental indicators for analyzing financial data in the U.S. stock market. The present material is licensed under a [Creative Commons Attribution-ShareAlike License 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Some of the material is inspired by [Lei&LoneCapital](https://lonecapital.com/). This work is not possible without Lei's inspiration and support. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!require(quantmod)) install.packages('quantmod')
+if (!require(BatchGetSymbols)) install.packages('BatchGetSymbols')
+library(quantmod)
+library(BatchGetSymbols)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(ggplot2)
+library(purrr)
+```
+
+```{r eval=FALSE}
+#You can either run the datascraping_v0.0.1.R file first to download, clean, process and save the cleaned data in .csv. 
+Source("datascraping_v0.0.1.R")
+
+```
+
+```{r loadCleanBreadth,echo=FALSE, message=TRUE, warning=TRUE}
+#set the file working directory
+processed_folder <-"./data/processed/"
+marketbreadthDSName <-"SP500marketBreadthScores"
+file_end <- paste0(Sys.Date(),".csv")
+scorefilePath <-paste0(processed_folder,paste0(marketbreadthDSName,file_end))
+scores <-read.csv(scorefilePath,check.names=FALSE)
+scores$ref.date <-as.Date(scores$ref.date)
+```
+
+
+```{r loadCleanDashboard,echo=FALSE, message=TRUE, warning=TRUE}
+#set the file working directory
+processed_folder <-"./data/processed/"
+marketbreadthDSName <-"MarketDashboardProcessed"
+file_end <- paste0(Sys.Date(),".csv")
+processdashfilePath <-paste0(processed_folder,paste0(marketbreadthDSName,file_end))
+leidashboard <-read.csv(processdashfilePath)
+#As.Date
+leidashboard$ref.date <-as.Date(leidashboard$ref.date)
+#Benchmark VTI
+benchmark <- leidashboard[leidashboard$Tickers == "VTI",]%>%select(-X)
+colnames(benchmark)<-paste0("BM",colnames(benchmark))
+leidashboard<-leidashboard %>%left_join(benchmark,by=c("ref.date"="BMref.date"))%>%
+  mutate(ReltoBM = `price.close`/`BMprice.close`)
+#keep one month's data for the dashboard
+leidashboard<-leidashboard%>%filter(ref.date>(Sys.Date()-30))
+
+marketEndofDay <-leidashboard %>% filter(ref.date == max(ref.date))%>%
+  select(watchlist,Sector,name,Tickers,Rel1D,Rel5D,Rel20D,AboveEMA20,AboveEMA60,AboveEMA120,C_Rel_EMA20,EMA20_Rel_EMA60,EMA60_Rel_EMA120,Percent)
+
+watchlistcategory <-unique(marketEndofDay$watchlist)
+```
+
+```{r loadCleanMyList,echo=FALSE, message=TRUE, warning=TRUE}
+#my own list
+processed_folder <-"./data/processed/"
+file_end <- paste0(Sys.Date(),".csv")
+processmylistfilePath <-paste0(processed_folder,paste0("MyListProcessed",file_end))
+mylistfile <-read.csv(processmylistfilePath)
+mylistfile$ref.date <- as.Date(mylistfile$ref.date)
+#keep one month data
+mylistfile<-mylistfile%>%filter(ref.date>(Sys.Date()-30))
+mylistfile_endofday <-mylistfile%>%filter(ref.date == max(ref.date))%>%
+  select(Tickers,Rel1D,Rel5D,Rel20D,AboveEMA20,AboveEMA60,AboveEMA120,C_Rel_EMA20,EMA20_Rel_EMA60,EMA60_Rel_EMA120)
+
+```
+
+
+# Market Overview
+
+## SP500 Market Breadth
+
+
+Companies in SP500 were sorted into 11 sectors according to Global Industry Classification Standards (GICS) based on their primary business activities. The figure shows the percentage of companies that are above 20-day simple moving average (20-day SMA) by each sector. The total breadth score for the SP500 is 1100. 
+
+
+```{r plotBreadth,echo=FALSE, message=TRUE, warning=TRUE}
+#Function: set cell color with green/red and transparency
+breadthcolorFill <-function(v,scale = 1){
+  #true or false fill.
+  color <-NULL
+  color = ifelse(v/scale>=0 & v/scale<50,rgb(255,0,0,(50-v/scale)*3,maxColorValue = 255),
+                 rgb(0,128,0,(v/scale-50)*3,maxColorValue = 255))
+  color
+}  
+
+scores %>% select(-"")%>%rename(Reference_Date =ref.date)%>%
+kbl(booktabs = T) %>%
+  kable_classic_2(full_width = F) %>%column_spec(1,width = "8em")%>%
+  column_spec(2,width = "6em",background =sapply(scores$`Communication Services`,breadthcolorFill))%>%
+  column_spec(3,width = "6em",background =sapply(scores$`Consumer Discretionary`,breadthcolorFill))%>%
+  column_spec(4,width = "6em",background =sapply(scores$`Consumer Staples`,breadthcolorFill))%>%
+  column_spec(5,background =sapply(scores$Energy,breadthcolorFill))%>%
+  column_spec(6, background =sapply(scores$Financials,breadthcolorFill))%>%
+  column_spec(7,width = "6em", background =sapply(scores$`Health Care`,breadthcolorFill))%>%
+  column_spec(8, width = "6em",background =sapply(scores$Industrials,breadthcolorFill))%>%
+  column_spec(9, width = "6em",background =sapply(scores$`Information Technology`,breadthcolorFill))%>%
+  column_spec(10, background =sapply(scores$Materials,breadthcolorFill))%>%
+  column_spec(11, background =sapply(scores$`Real Estate`,breadthcolorFill))%>%
+  column_spec(12, background =sapply(scores$Utilities,breadthcolorFill))%>%
+  column_spec(13, background =sapply(scores$Breadth,breadthcolorFill,scale = 11))
+```
+
+## U.S. Market Dashboard
+
+### Broad Market
+
+```{r plot, echo=FALSE, message=TRUE, warning=TRUE}
+#Function: set cell color with green/red and transparency
+FillTransparentColor <-function(v,maxPercent = 10){
+  color <-NULL
+  color = ifelse(v<=0,rgb(255,0,0,min(1,abs(v/maxPercent))*250,maxColorValue = 255),
+                 rgb(0,128,0,min(1,abs(v/maxPercent))*250,maxColorValue = 255))
+  color
+}
+
+#Function: set cell color with green/red 
+FillSolidRedGreenColor <-function(v){
+  color <-NULL
+  color = ifelse(v<0 ,rgb(80,0,0,250,maxColorValue = 255),"black")
+  color
+}
+
+DStoPlot<-function(DS_latestday, DS_Full,watchlist_section){
+  tempds <-DS_latestday%>%filter(watchlist == watchlist_section)%>%select(-watchlist,-Sector,-Percent)
+  tempfull <-DS_Full%>%filter(watchlist == watchlist_section)
+  tempfull$Tickers <- factor(tempfull$Tickers, levels=unique(tempfull$Tickers))
+  mpg_list <- split(tempfull$price.close, tempfull$Tickers)
+  volumn_list <- split(tempfull$volume,tempfull$Tickers)
+  rel_list <- split(tempfull$ReltoBM,tempfull$Tickers) 
+  #print(names(rel_list))
+  inline_plot <- data.frame(Tickers = names(mpg_list), 
+                          OneMonth = "", Volume = "",ReltoBM ="")
+  inline_plot <-tempds%>%
+  left_join(inline_plot,by = "Tickers")
+  inline_plot$OneMonth <-""
+  inline_plot$Volume <-""
+  inline_plot$ReltoBM<-""
+  #print(inline_plot$Tickers)
+  inline_plot%>%
+  kbl(booktabs = TRUE,
+      col.names = c(watchlist_section,"Ticker","1D%","5D%","20D%",">EMA20",">EMA60",">EMA120","C/S%","S/M%","M/L%","1M","Volume","Rel BM")) %>%
+  kable_classic_2(full_width = T) %>%
+  column_spec(12, image = spec_plot(mpg_list, same_lim = FALSE)) %>%
+  column_spec(13, image = spec_plot(volumn_list, polymin = 20,same_lim = FALSE))%>%
+  column_spec(14, image = spec_plot(rel_list, same_lim = FALSE))%>%
+  row_spec(0, bold = T, color = "white", background = "black")%>%
+  column_spec(3,color=sapply(inline_plot$Rel1D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel1D,FillTransparentColor))%>%
+  column_spec(4,color=sapply(inline_plot$Rel5D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel5D,FillTransparentColor))%>%
+  column_spec(5,color=sapply(inline_plot$Rel20D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel20D,FillTransparentColor))%>%
+  column_spec(6,color=sapply(inline_plot$AboveEMA20,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA20>0,"green","red"))%>%
+  column_spec(7,color=sapply(inline_plot$AboveEMA60,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA60>0,"green","red"))%>%
+  column_spec(8,color=sapply(inline_plot$AboveEMA120,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA120>0,"green","red"))%>%
+  column_spec(9,color=sapply(inline_plot$C_Rel_EMA20,FillSolidRedGreenColor),background =sapply(inline_plot$C_Rel_EMA20,FillTransparentColor))%>%
+  column_spec(10,color=sapply(inline_plot$EMA20_Rel_EMA60,FillSolidRedGreenColor),background =sapply(inline_plot$EMA20_Rel_EMA60,FillTransparentColor))%>%
+  column_spec(11,color=sapply(inline_plot$EMA60_Rel_EMA120,FillSolidRedGreenColor),background =sapply(inline_plot$EMA60_Rel_EMA120,FillTransparentColor))%>%
+  add_footnote(c(paste0("Date as Market Close:",max(DS_Full$ref.date)),
+                 "Rel BM: 1 month relative to benchmark; C:current price; S(hort): EMA20; M(edium): EMA60; L(ong): EMA120"))
+}
+
+DStoPlot(marketEndofDay,leidashboard,watchlistcategory[1])
+DStoPlot(marketEndofDay,leidashboard,watchlistcategory[2])
+DStoPlot(marketEndofDay,leidashboard,watchlistcategory[3])
+DStoPlot(marketEndofDay,leidashboard,watchlistcategory[4])
+
+```
+
+### Market by Industry 
+
+```{r plotindustry, echo=FALSE, message=TRUE, warning=TRUE}
+#plot industry togther with the breadth.
+  tempds <-marketEndofDay%>%filter(watchlist == watchlistcategory[5])%>%select(-watchlist)
+  tempfull <-leidashboard%>%filter(watchlist == watchlistcategory[5])
+  tempfull$Tickers <- factor(tempfull$Tickers, levels=unique(tempfull$Tickers))
+  mpg_list <- split(tempfull$price.close, tempfull$Tickers)
+  volumn_list <- split(tempfull$volume,tempfull$Tickers)
+  rel_list <- split(tempfull$ReltoBM,tempfull$Tickers) 
+  bread_list<-split(tempfull$Percent,tempfull$Tickers)
+  #print(names(rel_list))
+  inline_plot <- data.frame(Tickers = names(mpg_list), 
+                          OneMonth = "", Volume = "",ReltoBM ="",MarketBreadth = "")
+  inline_plot <-tempds%>%
+  left_join(inline_plot,by = "Tickers")
+  inline_plot$OneMonth <-""
+  inline_plot$Volume <-""
+  inline_plot$ReltoBM<-""
+  inline_plot$MarketBreadth <-""
+  #print(inline_plot$Tickers)
+  
+  start_row_by_sector <-inline_plot%>%mutate(id = row_number())%>%group_by(Sector)%>%mutate(row_id = row_number(Percent))%>%filter(row_id == 1)%>%select(Sector,id)
+  
+  inline_plot%>%select(-Sector)%>%
+  kbl(booktabs = TRUE,
+      col.names = c("Name","Ticker","1D%","5D%","20D%",">EMA20",">EMA60",">EMA120","C/S%","S/M%","M/L%","Breadth","1M","1M Volume","Rel BM","1M Breadth")) %>%
+  kable_classic_2(full_width = T) %>%
+  column_spec(13, image = spec_plot(mpg_list, same_lim = FALSE)) %>%
+  column_spec(14, image = spec_plot(volumn_list, polymin = 20,same_lim = FALSE))%>%
+  column_spec(15, image = spec_plot(rel_list, same_lim = FALSE))%>%
+  column_spec(16, image = spec_plot(bread_list, same_lim = TRUE))%>%
+  row_spec(0, bold = T, color = "white", background = "black")%>%
+  column_spec(3,color=sapply(inline_plot$Rel1D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel1D,FillTransparentColor))%>%
+  column_spec(4,color=sapply(inline_plot$Rel5D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel5D,FillTransparentColor))%>%
+  column_spec(5,color=sapply(inline_plot$Rel20D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel20D,FillTransparentColor))%>%
+column_spec(6,color=sapply(inline_plot$AboveEMA20,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA20>0,"green","red"))%>%
+    column_spec(7,color=sapply(inline_plot$AboveEMA60,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA60>0,"green","red"))%>%
+    
+  column_spec(8,color=sapply(inline_plot$AboveEMA120,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA120>0,"green","red"))%>%
+      column_spec(9,color=sapply(inline_plot$C_Rel_EMA20,FillSolidRedGreenColor),background =sapply(inline_plot$C_Rel_EMA20,FillTransparentColor))%>%
+  column_spec(10,color=sapply(inline_plot$EMA20_Rel_EMA60,FillSolidRedGreenColor),background =sapply(inline_plot$EMA20_Rel_EMA60,FillTransparentColor))%>%
+  column_spec(11,color=sapply(inline_plot$EMA60_Rel_EMA120,FillSolidRedGreenColor),background =sapply(inline_plot$EMA60_Rel_EMA120,FillTransparentColor))%>%
+  column_spec(12,background =sapply(inline_plot$Percent,breadthcolorFill))%>%
+  add_footnote(c(paste0("Date as Market Close:",max(tempfull$ref.date)),
+                 "Rel BM: 1 month relative to benchmark; C:current price; S(hort): EMA20; M(edium): EMA60; L(ong): EMA120"))%>%
+  pack_rows(as.character(start_row_by_sector[1,1]), as.numeric(start_row_by_sector[1,2]), as.numeric(start_row_by_sector[2,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[2,1]), as.numeric(start_row_by_sector[2,2]), as.numeric(start_row_by_sector[3,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[3,1]), as.numeric(start_row_by_sector[3,2]), as.numeric(start_row_by_sector[4,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[4,1]), as.numeric(start_row_by_sector[4,2]), as.numeric(start_row_by_sector[5,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[5,1]), as.numeric(start_row_by_sector[5,2]), as.numeric(start_row_by_sector[6,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[6,1]), as.numeric(start_row_by_sector[6,2]), as.numeric(start_row_by_sector[7,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[7,1]), as.numeric(start_row_by_sector[7,2]), as.numeric(start_row_by_sector[8,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[8,1]), as.numeric(start_row_by_sector[8,2]), as.numeric(start_row_by_sector[9,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[9,1]), as.numeric(start_row_by_sector[9,2]), as.numeric(start_row_by_sector[10,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[10,1]), as.numeric(start_row_by_sector[10,2]), as.numeric(start_row_by_sector[11,2]-1), label_row_css = "background-color: #666; color: #fff;")%>%
+  pack_rows(as.character(start_row_by_sector[11,1]), as.numeric(start_row_by_sector[11,2]), as.numeric(start_row_by_sector[11,2]), label_row_css = "background-color: #666; color: #fff;")
+```
+
+## My Watchlist
+
+```{r plotmylist,echo=FALSE, message=TRUE, warning=TRUE}
+
+  mylistfile$Tickers <- factor(mylistfile$Tickers, levels=unique(mylistfile$Tickers))
+  mpg_list <- split(mylistfile$price.close, mylistfile$Tickers)
+  volumn_list <- split(mylistfile$volume,mylistfile$Tickers)
+  #print(names(rel_list))
+  inline_plot <- data.frame(Tickers = names(mpg_list), 
+                          OneMonth = "", Volume = "")
+  inline_plot <-mylistfile_endofday%>%
+  left_join(inline_plot,by = "Tickers")
+  inline_plot$OneMonth <-""
+  inline_plot$Volume <-""
+
+  
+  inline_plot%>%
+  kbl(booktabs = TRUE,
+      col.names = c("Ticker","1D%","5D%","20D%",">EMA20",">EMA60",">EMA120","C/S%","S/M%","M/L%","1M","1M Volume")) %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(11, image = spec_plot(mpg_list, same_lim = FALSE)) %>%
+  column_spec(12, image = spec_plot(volumn_list, polymin = 20,same_lim = FALSE))%>%
+  row_spec(0, bold = T, color = "white", background = "black")%>%
+  column_spec(2,color=sapply(inline_plot$Rel1D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel1D,FillTransparentColor))%>%
+  column_spec(3,color=sapply(inline_plot$Rel5D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel5D,FillTransparentColor))%>%
+  column_spec(4,color=sapply(inline_plot$Rel20D,FillSolidRedGreenColor),background =sapply(inline_plot$Rel20D,FillTransparentColor))%>%
+    column_spec(5,color=sapply(inline_plot$AboveEMA20,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA20>0,"green","red"))%>%
+    column_spec(6,color=sapply(inline_plot$AboveEMA60,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA60>0,"green","red"))%>%
+  column_spec(7,color=sapply(inline_plot$AboveEMA120,FillSolidRedGreenColor),background =ifelse(inline_plot$AboveEMA120>0,"green","red"))%>%
+      column_spec(8,color=sapply(inline_plot$C_Rel_EMA20,FillSolidRedGreenColor),background =sapply(inline_plot$C_Rel_EMA20,FillTransparentColor))%>%
+  column_spec(9,color=sapply(inline_plot$EMA20_Rel_EMA60,FillSolidRedGreenColor),background =sapply(inline_plot$EMA20_Rel_EMA60,FillTransparentColor))%>%
+  column_spec(10,color=sapply(inline_plot$EMA60_Rel_EMA120,FillSolidRedGreenColor),background =sapply(inline_plot$EMA60_Rel_EMA120,FillTransparentColor))%>%
+  add_footnote(c(paste0("Date as Market Close:",max(tempfull$ref.date)),
+                 "C:current price; S(hort): EMA20; M(edium): EMA60; L(ong): EMA120"))
+
+```
+
