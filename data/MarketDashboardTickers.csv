@@ -1,0 +1,77 @@
+﻿Symbols,name,watchlist,Sector
+VTI,Total Market,Broad Market,
+DIA,DJI 30,Broad Market,
+OEF,S&P 100,Broad Market,
+MDY,S&P 400,Broad Market,
+SPY,S&P 500,Broad Market,
+RSP,S&P 500 EQ,Broad Market,
+QQQ,Nasdaq 100,Broad Market,
+QTEC,Nasdaq 100 Tech,Broad Market,
+IWB,Russell 1000,Broad Market,
+IWM,Russell 2000,Broad Market,
+MTUM,Momentum,Factors,
+VLUE,Value,Factors,
+QUAL,Quality,Factors,
+USMV,Low Volatility,Factors,
+IWF,Russell 1000 Growth,Growth or Value,
+IWD,Russell 1000 Value,Growth or Value,
+IVW,S&P 500 Growth,Growth or Value,
+IVE,S&P 500 Value,Growth or Value,
+MOAT,Wide Moat,Thematic,
+FFTY,CANSLIM,Thematic,
+IBUY,Online Retail,Thematic,
+CIBR,Cyber Security,Thematic,
+SKYY,Cloud,Thematic,
+IPAY,Mobile Payment,Thematic,
+FINX,FinTech,Thematic,
+XT,Exponential Tech,Thematic,
+ARKK,Disruptive Innovation,Thematic,
+BOTZ,Robotice & AI,Thematic,
+MOO,Agribusiness,Thematic,
+ARKG,Genomic Revolution,Thematic,
+MJ,Marijuana,Thematic,
+ARKW,Next Gen. Internet,Thematic,
+ARKQ,Autonomous Tech,Thematic,
+PBW,Clean Energy,Thematic,
+BLOK,Blockchain Tech,Thematic,
+SNSR,Internet Of Things,Thematic,
+XLC,Communications,Industry,Communication Services
+XLY,Consumer Disc,Industry,Consumer Discretionary
+XHB,Home Builders,Industry,Consumer Discretionary
+XRT,Retail,Industry,Consumer Discretionary
+XLP,Consumer Staples,Industry,Consumer Staples
+XLE,Energy,Industry,Energy
+XOP,Oil & Gas Explorator,Industry,Energy
+OIH,Oil Service,Industry,Energy
+TAN,Solar,Industry,Energy
+URA,Nuclear,Industry,Energy
+XLF,Financial,Industry,Financials
+KBE,Banks,Industry,Financials
+KIE,Insurance,Industry,Financials
+IAI,Brokers,Industry,Financials
+XLV,Healthcare,Industry,Health Care
+IBB,Biotech,Industry,Health Care
+IHI,Medical Devices,Industry,Health Care
+IHF,Healthcare Providers,Industry,Health Care
+XPH,Pharmaceuticals,Industry,Health Care
+XLI,Industrials,Industry,Industrials
+ITA,Aero & Defence,Industry,Industrials
+IYT,Transportation,Industry,Industrials
+JETS,Global Jets,Industry,Industrials
+XLB,Materials,Industry,Materials
+GDX,Gold Miners,Industry,Materials
+XME,Metals & Mining,Industry,Materials
+LIT,Lithium & Battery,Industry,Materials
+REMX,Rare Earth,Industry,Materials
+IYM,Basic Materials,Industry,Materials
+XLRE,Real Estate,Industry,Real Estate
+VNQ,REIT US,Industry,Real Estate
+VNQI,REIT Global ex. US,Industry,Real Estate
+REM,Mortgage,Industry,Real Estate
+XLK,Technology,Industry,Information Technology
+VGT,IT,Industry,Information Technology
+FDN,Internet,Industry,Information Technology
+SOCL,Social Media,Industry,Information Technology
+IGV,Software & Saas,Industry,Information Technology
+SOXX,Semiconductors,Industry,Information Technology
+XLU,Utilities,Industry,Utilities
