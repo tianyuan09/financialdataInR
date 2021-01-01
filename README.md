@@ -17,5 +17,7 @@ Note:
 1. `Sys.Date()` is used when rmarkdown file loads the data for visualization.
 
 
+### Demo 
 
+The HTML output file can be found at [https://rpubs.com/tianyuan/marketbreadth](https://rpubs.com/tianyuan/marketbreadth)
 
