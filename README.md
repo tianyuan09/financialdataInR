@@ -3,6 +3,16 @@ Financial data analyses using R
 
 This document presents several fundamental indicators for analyzing financial data in the U.S. stock market. The present material is licensed under a [Creative Commons Attribution-ShareAlike License 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Some of the material is inspired by [Lei&LoneCapital](https://lonecapital.com/) and the developers of [breadth.app](http://breadth.app). This work is not possible without Lei's inspiration and support. 
 
+### Environment
+
+* R version 4.0.3
+* RStudio
+* Several key R packages: 
+  * `rmarkdown`
+  * `dplyr`
+  * `quantmod`
+  * `kableExtra`
+
 ### 1. Financial Data Prep
 
 Run the `datascraping_v0.0.1.R` script file. 
