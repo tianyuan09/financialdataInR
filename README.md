@@ -18,7 +18,7 @@ This document presents several fundamental indicators for analyzing financial da
 Run the `datascraping_v0.0.1.R` script file. 
 The R script file will download, clean, process, and save the financial data as of `Sys.Date()` in the .csv format under the `data/processed` and `data/raw` folder.
 
-### 2. Financial Data Visualization
+## 2. Financial Data Visualization
 
 Step 2: run the `MarketDashboard.Rmd` file to visulzation the tables. 
 The rmd file will load the data files processed on `Sys.Date()` under the `data/processed` folder for visualization. 
